@@ -1,0 +1,48 @@
+{
+  "name": "forgekit-reactor",
+  "version": "0.1.0",
+  "description": "MCP that scaffolds production-grade NX monorepos via an interactive wizard — NX + React 19 + Vite, Panda CSS + Ark UI, Storybook, and more, generated as deterministic, repeatable layers.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/effinrich/forgekit-nx-builder.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "nx",
+    "monorepo",
+    "scaffold",
+    "generator",
+    "react",
+    "cli"
+  ],
+  "bin": {
+    "forgekit-reactor": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "@modelcontextprotocol/client": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
