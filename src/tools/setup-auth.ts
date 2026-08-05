@@ -173,7 +173,7 @@ function writeSignUpScreen(authDir: string): void {
   writeFileSync(join(authDir, 'sign-up.tsx'), source);
 }
 
-interface IdentityProviders {
+export interface IdentityProviders {
   email: 'password' | 'magic-link';
   google: boolean;
   github: boolean;
@@ -209,6 +209,27 @@ const setupAuthInputSchema = z.object({
   identityProviders: identityProvidersSchema.default({ email: 'password', google: false, github: false }),
 });
 
+export async function setupAuth(
+  targetDir: string,
+  appName: string,
+  authEngine: 'clerk' | 'self-hosted',
+  identityProviders: IdentityProviders,
+): Promise<string> {
+  writeUserSchema(targetDir);
+
+  if (authEngine === 'self-hosted') {
+    return (
+      'Self-hosted auth (Better Auth) support is coming in v2 — the MVP wizard wires Clerk only. ' +
+      'The user schema was still generated at libs/features/auth/user.schema.ts, since the first-party UI ' +
+      'needs a shape to bind to regardless of engine. Re-run with authEngine: "clerk" to generate the auth screens now.'
+    );
+  }
+
+  await setupClerkAuth(targetDir, appName, identityProviders);
+
+  return `Generated Clerk-backed first-party sign-in/up screens at libs/features/auth (${identityProviders.email}${identityProviders.google ? ', Google' : ''}${identityProviders.github ? ', GitHub' : ''}), user schema, and .env.example.`;
+}
+
 export function registerSetupAuthTool(server: McpServer): void {
   server.registerTool(
     'setup-auth',
@@ -218,32 +239,8 @@ export function registerSetupAuthTool(server: McpServer): void {
       inputSchema: setupAuthInputSchema,
     },
     async ({ targetDir, appName, authEngine, identityProviders }) => {
-      writeUserSchema(targetDir);
-
-      if (authEngine === 'self-hosted') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text:
-                'Self-hosted auth (Better Auth) support is coming in v2 — the MVP wizard wires Clerk only. ' +
-                'The user schema was still generated at libs/features/auth/user.schema.ts, since the first-party UI ' +
-                'needs a shape to bind to regardless of engine. Re-run with authEngine: "clerk" to generate the auth screens now.',
-            },
-          ],
-        };
-      }
-
-      await setupClerkAuth(targetDir, appName, identityProviders);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Generated Clerk-backed first-party sign-in/up screens at libs/features/auth (${identityProviders.email}${identityProviders.google ? ', Google' : ''}${identityProviders.github ? ', GitHub' : ''}), user schema, and .env.example.`,
-          },
-        ],
-      };
+      const message = await setupAuth(targetDir, appName, authEngine, identityProviders);
+      return { content: [{ type: 'text', text: message }] };
     },
   );
 }

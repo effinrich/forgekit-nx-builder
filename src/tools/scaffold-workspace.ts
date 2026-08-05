@@ -18,13 +18,13 @@ function assertEmptyDir(dir: string): void {
   }
 }
 
-interface ScaffoldResult {
+export interface ScaffoldResult {
   workspacePath: string;
   appName: string;
   nxVersion: string;
 }
 
-async function scaffoldNxWorkspace(targetDir: string, appName: string): Promise<ScaffoldResult> {
+export async function scaffoldNxWorkspace(targetDir: string, appName: string): Promise<ScaffoldResult> {
   assertEmptyDir(targetDir);
 
   // 1. Bare empty NX workspace, scaffolded directly into the target dir.

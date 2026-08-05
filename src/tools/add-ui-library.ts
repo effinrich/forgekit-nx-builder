@@ -181,6 +181,37 @@ const addUiLibraryInputSchema = z.object({
     .describe('Single theming step: interactive hex entry or paste (CSS vars / Panda token JSON, auto-detected).'),
 });
 
+export type AddUiLibraryTheming =
+  | { mode: 'interactive'; primary: string; secondary: string; accent?: string | undefined; background?: string | undefined }
+  | { mode: 'paste'; pasted: string };
+
+export async function addUiLibrary(
+  targetDir: string,
+  appName: string,
+  library: 'panda-ark' | 'shadcn-tailwind',
+  theming: AddUiLibraryTheming,
+): Promise<string> {
+  const tokens: TokenScale =
+    theming.mode === 'interactive'
+      ? tokensFromHex({
+          primary: theming.primary,
+          secondary: theming.secondary,
+          ...(theming.accent !== undefined ? { accent: theming.accent } : {}),
+          ...(theming.background !== undefined ? { background: theming.background } : {}),
+        })
+      : normalizePastedTheme(theming.pasted);
+
+  if (library === 'panda-ark') {
+    await installPandaArk(targetDir, appName, tokens);
+  } else {
+    await installShadcnTailwind(targetDir, appName);
+  }
+
+  appendFigmaSection(targetDir, library as UiLibraryChoice);
+
+  return `Installed ${library === 'panda-ark' ? 'Panda CSS + Ark UI' : 'Tailwind + shadcn/ui'} into libs/shared/ui, wired into apps/${appName}. Theme tokens applied. Figma kit link written to README.`;
+}
+
 export function registerAddUiLibraryTool(server: McpServer): void {
   server.registerTool(
     'add-ui-library',
@@ -190,37 +221,13 @@ export function registerAddUiLibraryTool(server: McpServer): void {
       inputSchema: addUiLibraryInputSchema,
     },
     async ({ targetDir, appName, library, theming }) => {
-      let tokens: TokenScale;
+      let message: string;
       try {
-        tokens =
-          theming.mode === 'interactive'
-            ? tokensFromHex({
-                primary: theming.primary,
-                secondary: theming.secondary,
-                ...(theming.accent !== undefined ? { accent: theming.accent } : {}),
-                ...(theming.background !== undefined ? { background: theming.background } : {}),
-              })
-            : normalizePastedTheme(theming.pasted);
+        message = await addUiLibrary(targetDir, appName, library, theming);
       } catch (err) {
         return { content: [{ type: 'text', text: `Theming error: ${(err as Error).message}` }], isError: true };
       }
-
-      if (library === 'panda-ark') {
-        await installPandaArk(targetDir, appName, tokens);
-      } else {
-        await installShadcnTailwind(targetDir, appName);
-      }
-
-      appendFigmaSection(targetDir, library as UiLibraryChoice);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Installed ${library === 'panda-ark' ? 'Panda CSS + Ark UI' : 'Tailwind + shadcn/ui'} into libs/shared/ui, wired into apps/${appName}. Theme tokens applied. Figma kit link written to README.`,
-          },
-        ],
-      };
+      return { content: [{ type: 'text', text: message }] };
     },
   );
 }

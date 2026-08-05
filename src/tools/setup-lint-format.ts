@@ -63,6 +63,10 @@ const setupLintFormatInputSchema = z.object({
     .describe('Lint/format tooling choice. Default is Oxlint + Oxfmt (via @nx-oxc/nx); ESLint + Prettier is the alternative.'),
 });
 
+export async function setupLintFormat(targetDir: string, linter: 'oxlint' | 'eslint'): Promise<string> {
+  return linter === 'oxlint' ? setupOxlintOxfmt(targetDir) : setupEslintPrettier(targetDir);
+}
+
 export function registerSetupLintFormatTool(server: McpServer): void {
   server.registerTool(
     'setup-lint-format',
@@ -72,7 +76,7 @@ export function registerSetupLintFormatTool(server: McpServer): void {
       inputSchema: setupLintFormatInputSchema,
     },
     async ({ targetDir, linter }) => {
-      const message = linter === 'oxlint' ? await setupOxlintOxfmt(targetDir) : await setupEslintPrettier(targetDir);
+      const message = await setupLintFormat(targetDir, linter);
       return { content: [{ type: 'text', text: message }] };
     },
   );

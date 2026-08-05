@@ -23,6 +23,27 @@ function writeVitestSetup(uiLibDir: string): void {
   writeFileSync(join(uiLibDir, '.storybook', 'vitest.setup.ts'), '// Storybook >= 10.3 applies preview annotations automatically.\nexport {};\n');
 }
 
+function writePreviewConfig(uiLibDir: string): void {
+  // The storybook-configuration generator writes an EMPTY .storybook/preview.ts
+  // — harmless to Storybook itself, but Oxlint's unicorn(no-empty-file) rule
+  // fails on it once setup-lint-format runs. Give it real, standard content.
+  writeFileSync(
+    join(uiLibDir, '.storybook', 'preview.ts'),
+    `import type { Preview } from '@storybook/react-vite';\n\n` +
+      `const preview: Preview = {\n` +
+      `  parameters: {\n` +
+      `    controls: {\n` +
+      `      matchers: {\n` +
+      `        color: /(background|color)$/i,\n` +
+      `        date: /Date$/i,\n` +
+      `      },\n` +
+      `    },\n` +
+      `  },\n` +
+      `};\n\n` +
+      `export default preview;\n`,
+  );
+}
+
 function writeStorybookVitestProject(uiLibDir: string): void {
   writeFileSync(
     join(uiLibDir, 'vitest.config.storybook.ts'),
@@ -92,7 +113,7 @@ function appendChromaticReadme(targetDir: string, accepted: boolean): void {
   writeFileSync(readmePath, existing + lines.join('\n'));
 }
 
-async function setupStorybook(targetDir: string, installChromatic: boolean): Promise<string> {
+export async function setupStorybook(targetDir: string, installChromatic: boolean): Promise<string> {
   const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
   const libPkg = readJson(join(uiLibDir, 'package.json'));
 
@@ -131,6 +152,7 @@ async function setupStorybook(targetDir: string, installChromatic: boolean): Pro
 
   patchMainAddons(uiLibDir);
   fixCheckboxStoryArgs(uiLibDir);
+  writePreviewConfig(uiLibDir);
   writeVitestSetup(uiLibDir);
   writeStorybookVitestProject(uiLibDir);
 
