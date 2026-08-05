@@ -11,14 +11,7 @@ import {
 import { getFigmaKitInfo, type UiLibraryChoice } from '../ui-lib/figma-links.js';
 import { emitNoRawClassnameRuleFile } from '../ui-lib/emit-lint-rule.js';
 import { run } from '../lib/run-command.js';
-
-function readJson(path: string): any {
-  return JSON.parse(readFileSync(path, 'utf-8'));
-}
-
-function writeJson(path: string, value: unknown): void {
-  writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
-}
+import { readJson, writeJson } from '../lib/json-file.js';
 
 function appendFigmaSection(targetDir: string, library: UiLibraryChoice): void {
   const info = getFigmaKitInfo(library);
