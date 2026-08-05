@@ -1,10 +1,11 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { FRAMEWORK_CHOICES, isFrameworkSupported, validateProjectName } from '../wizard/types.js';
 import { comingSoonMessage } from '../wizard/comingSoon.js';
 import { run } from '../lib/run-command.js';
+import { readJson, writeJson, type PackageJsonLike } from '../lib/json-file.js';
 
 const ZUSTAND_VERSION = '^5.0.0';
 
@@ -47,14 +48,14 @@ export async function scaffoldNxWorkspace(targetDir: string, appName: string): P
   //    @nx/js + @nx/react to the exact same version — a version-skew bug between
   //    nx and @nx/react causes generators to crash with an unrelated-looking error.
   const rootPkgPath = join(targetDir, 'package.json');
-  const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf-8'));
-  const nxVersion: string = rootPkg.devDependencies?.nx;
+  const rootPkg = readJson<PackageJsonLike & { pnpm?: { onlyBuiltDependencies?: string[] } }>(rootPkgPath);
+  const nxVersion: string | undefined = rootPkg.devDependencies?.nx;
   if (!nxVersion) {
     throw new Error('Could not determine installed nx version from generated package.json.');
   }
 
   rootPkg.pnpm = { ...(rootPkg.pnpm ?? {}), onlyBuiltDependencies: ['nx'] };
-  writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
+  writeJson(rootPkgPath, rootPkg);
 
   await run('pnpm', ['add', '-D', `nx@${nxVersion}`, `@nx/js@${nxVersion}`, `@nx/react@${nxVersion}`], targetDir);
 
@@ -100,9 +101,9 @@ export async function scaffoldNxWorkspace(targetDir: string, appName: string): P
   // 6. Zustand — base dependency of the generated app per plan §6 (client state:
   //    TanStack Query owns server state, Zustand owns local/global UI state).
   const appPkgPath = join(targetDir, 'apps', appName, 'package.json');
-  const appPkg = JSON.parse(readFileSync(appPkgPath, 'utf-8'));
+  const appPkg = readJson<PackageJsonLike>(appPkgPath);
   appPkg.dependencies = { ...(appPkg.dependencies ?? {}), zustand: ZUSTAND_VERSION };
-  writeFileSync(appPkgPath, JSON.stringify(appPkg, null, 2) + '\n');
+  writeJson(appPkgPath, appPkg);
   await run('pnpm', ['install'], targetDir);
 
   return { workspacePath: targetDir, appName, nxVersion };

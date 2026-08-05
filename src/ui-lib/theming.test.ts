@@ -60,4 +60,21 @@ describe('theming', () => {
   test('paste mode: unrecognized format throws a clear error', () => {
     expect(() => normalizePastedTheme('not a theme at all')).toThrow(/Could not detect/);
   });
+
+  test('paste mode: malformed JSON throws a clear wizard message, not a raw SyntaxError', () => {
+    expect(() => normalizePastedTheme('{not valid json')).toThrow(/not valid JSON/);
+  });
+
+  test('paste mode: non-hex values are rejected, closing the code-injection surface into generated panda.config.ts', () => {
+    // Every theme value is later interpolated as a JS string literal into
+    // generated source — a value like this, left unvalidated, would break
+    // out of that literal and inject arbitrary code into the user's project.
+    const malicious = ":root{--primary: '; process.exit(1); //; --secondary: #f97316;}";
+    expect(() => normalizePastedTheme(malicious)).toThrow(/not a valid hex color/);
+
+    const maliciousJson = JSON.stringify({
+      colors: { primary: { value: "'; process.exit(1); //" }, secondary: { value: '#f97316' } },
+    });
+    expect(() => normalizePastedTheme(maliciousJson)).toThrow(/not a valid hex color/);
+  });
 });

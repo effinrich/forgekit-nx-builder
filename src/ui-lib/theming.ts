@@ -49,6 +49,18 @@ export function detectThemeFormat(pasted: string): ThemeFormat | null {
   return null;
 }
 
+// Every extracted value ends up interpolated as a string literal into
+// generated TypeScript source (tokenScaleToPandaConfigSnippet) — validating
+// as hex-only here, same as interactive mode, closes off any possibility of
+// pasted content breaking out of that string literal and injecting code into
+// the generated project.
+function requireHex(name: string, value: string): string {
+  if (!validateHex(value)) {
+    throw new Error(`Pasted theme value for "${name}" is not a valid hex color: "${value}". Expected e.g. "#3b82f6".`);
+  }
+  return value;
+}
+
 function normalizeCssVars(pasted: string): TokenScale {
   const declarations = [...pasted.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)];
   const map: Record<string, string> = {};
@@ -62,18 +74,26 @@ function normalizeCssVars(pasted: string): TokenScale {
     throw new Error('Pasted CSS vars must define at least --primary and --secondary.');
   }
 
+  const accent = map['accent'];
+  const background = map['background'];
+
   return {
     colors: {
-      primary: { value: primary },
-      secondary: { value: secondary },
-      ...(map['accent'] ? { accent: { value: map['accent'] } } : {}),
-      ...(map['background'] ? { background: { value: map['background'] } } : {}),
+      primary: { value: requireHex('primary', primary) },
+      secondary: { value: requireHex('secondary', secondary) },
+      ...(accent ? { accent: { value: requireHex('accent', accent) } } : {}),
+      ...(background ? { background: { value: requireHex('background', background) } } : {}),
     },
   };
 }
 
 function normalizePandaJson(pasted: string): TokenScale {
-  const parsed = JSON.parse(pasted);
+  let parsed: { colors?: Record<string, unknown> } & Record<string, unknown>;
+  try {
+    parsed = JSON.parse(pasted);
+  } catch {
+    throw new Error('Pasted Panda token JSON is not valid JSON. Check for a missing/extra comma, quote, or brace.');
+  }
   const colors = parsed.colors ?? parsed;
 
   const extractValue = (entry: unknown): string | undefined => {
@@ -93,10 +113,10 @@ function normalizePandaJson(pasted: string): TokenScale {
 
   return {
     colors: {
-      primary: { value: primary },
-      secondary: { value: secondary },
-      ...(accent ? { accent: { value: accent } } : {}),
-      ...(background ? { background: { value: background } } : {}),
+      primary: { value: requireHex('primary', primary) },
+      secondary: { value: requireHex('secondary', secondary) },
+      ...(accent ? { accent: { value: requireHex('accent', accent) } } : {}),
+      ...(background ? { background: { value: requireHex('background', background) } } : {}),
     },
   };
 }

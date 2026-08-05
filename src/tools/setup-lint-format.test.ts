@@ -48,9 +48,11 @@ describe('setup-lint-format tool', () => {
       expect(existsSync(join(targetDir, '.oxfmtrc.json'))).toBe(true);
       expect(existsSync(join(targetDir, 'libs', 'shared', 'ui', '.oxlintrc.json'))).toBe(true);
 
-      const nxJson = JSON.parse(readFileSync(join(targetDir, 'nx.json'), 'utf-8'));
-      const pluginNames = (nxJson.plugins ?? []).map((p: any) => (typeof p === 'string' ? p : p.plugin));
-      expect(pluginNames.some((n: string) => n?.includes('@nx-oxc/nx'))).toBe(true);
+      const nxJson = JSON.parse(readFileSync(join(targetDir, 'nx.json'), 'utf-8')) as {
+        plugins?: Array<string | { plugin: string }>;
+      };
+      const pluginNames = (nxJson.plugins ?? []).map((p) => (typeof p === 'string' ? p : p.plugin));
+      expect(pluginNames.some((n) => n?.includes('@nx-oxc/nx'))).toBe(true);
 
       const lintOutput = execFileSync('npx', ['nx', 'run', '@org/ui:lint'], { cwd: targetDir, encoding: 'utf-8' });
       expect(lintOutput).toMatch(/Successfully ran target lint/);

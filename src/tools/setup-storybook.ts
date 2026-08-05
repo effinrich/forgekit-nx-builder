@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
-import { readJson } from '../lib/json-file.js';
+import { readJson, type PackageJsonLike } from '../lib/json-file.js';
 
 const CHROMATIC_PROMPT =
   'Install Chromatic? (visual regression testing for Storybook — catches unintended UI changes) [y/N]';
@@ -38,6 +38,9 @@ function writePreviewConfig(uiLibDir: string): void {
       `        date: /Date$/i,\n` +
       `      },\n` +
       `    },\n` +
+      `    // 'error' (not the default 'todo') makes a11y violations fail the\n` +
+      `    // Vitest run, not just warn in the Storybook UI panel.\n` +
+      `    a11y: { test: 'error' },\n` +
       `  },\n` +
       `};\n\n` +
       `export default preview;\n`,
@@ -115,7 +118,7 @@ function appendChromaticReadme(targetDir: string, accepted: boolean): void {
 
 export async function setupStorybook(targetDir: string, installChromatic: boolean): Promise<string> {
   const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
-  const libPkg = readJson(join(uiLibDir, 'package.json'));
+  const libPkg = readJson<PackageJsonLike>(join(uiLibDir, 'package.json'));
 
   await run(
     'npx',
@@ -131,8 +134,8 @@ export async function setupStorybook(targetDir: string, installChromatic: boolea
     targetDir,
   );
 
-  const rootPkg = readJson(join(targetDir, 'package.json'));
-  const storybookVersion: string = rootPkg.devDependencies?.storybook;
+  const rootPkg = readJson<PackageJsonLike>(join(targetDir, 'package.json'));
+  const storybookVersion: string | undefined = rootPkg.devDependencies?.storybook;
   if (!storybookVersion) {
     throw new Error('Could not determine installed storybook version after storybook-configuration generator ran.');
   }

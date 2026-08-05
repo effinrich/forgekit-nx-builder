@@ -12,7 +12,7 @@ export function isFrameworkSupported(framework: FrameworkChoice): boolean {
   return FULLY_SUPPORTED_FRAMEWORKS.includes(framework);
 }
 
-const PROJECT_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+export const PROJECT_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 
 export function validateProjectName(name: string): { valid: true } | { valid: false; reason: string } {
   if (name.trim().length === 0) {

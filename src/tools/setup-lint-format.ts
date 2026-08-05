@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
-import { readJson } from '../lib/json-file.js';
+import { readJson, type PackageJsonLike } from '../lib/json-file.js';
 
 async function setupOxlintOxfmt(targetDir: string): Promise<string> {
   // nx add handles the workspace-root pnpm install itself — a plain
@@ -12,7 +12,7 @@ async function setupOxlintOxfmt(targetDir: string): Promise<string> {
   await run('npx', ['nx', 'add', '@nx-oxc/nx'], targetDir);
 
   const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
-  const libPkg = readJson(join(uiLibDir, 'package.json'));
+  const libPkg = readJson<PackageJsonLike>(join(uiLibDir, 'package.json'));
   await run(
     'npx',
     ['nx', 'g', '@nx-oxc/nx:configuration', `--project=${libPkg.name}`, '--interactive=false'],
@@ -32,7 +32,7 @@ async function setupOxlintOxfmt(targetDir: string): Promise<string> {
 
 async function setupEslintPrettier(targetDir: string): Promise<string> {
   const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
-  const libPkg = readJson(join(uiLibDir, 'package.json'));
+  const libPkg = readJson<PackageJsonLike>(join(uiLibDir, 'package.json'));
 
   // @nx/eslint has no per-project "add lint to this project" generator in
   // current NX — it registers @nx/eslint/plugin as an inferred plugin, which
