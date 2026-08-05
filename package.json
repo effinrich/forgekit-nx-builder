@@ -40,7 +40,8 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "@types/node": "^22.0.0",
-    "@modelcontextprotocol/client": "^2.0.0"
+    "@modelcontextprotocol/client": "^2.0.0",
+    "eslint": "^10.8.0"
   },
   "engines": {
     "node": ">=20"

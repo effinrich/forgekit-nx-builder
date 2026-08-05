@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { registerScaffoldWorkspaceTool } from './tools/scaffold-workspace.js';
+import { registerAddUiLibraryTool } from './tools/add-ui-library.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'forgekit-reactor', version: '0.1.0' });
@@ -17,6 +18,7 @@ export function createServer(): McpServer {
   );
 
   registerScaffoldWorkspaceTool(server);
+  registerAddUiLibraryTool(server);
 
   return server;
 }

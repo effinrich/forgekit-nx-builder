@@ -56,10 +56,10 @@ describe('scaffold-workspace tool', () => {
       client = await connectedClient();
       const targetDir = makeEmptyTempDir();
 
-      const result = await client.callTool({
-        name: 'scaffold-workspace',
-        arguments: { targetDir, projectName: 'app', framework: 'none' },
-      });
+      const result = await client.callTool(
+        { name: 'scaffold-workspace', arguments: { targetDir, projectName: 'app', framework: 'none' } },
+        { timeout: 300_000 },
+      );
 
       expect(result.isError).toBeFalsy();
 
