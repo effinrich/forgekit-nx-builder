@@ -1,9 +1,9 @@
-import { describe, test } from 'vitest';
+import { describe, it } from 'vitest';
 import { RuleTester } from 'eslint';
 import { noRawClassname } from './no-raw-classname-rule.js';
 
 describe('no-raw-classname rule', () => {
-  test('catches raw string classNames, allows variant/recipe-call classNames', () => {
+  it('catches raw string classNames, allows variant/recipe-call classNames', () => {
     const ruleTester = new RuleTester({
       languageOptions: {
         ecmaVersion: 2022,

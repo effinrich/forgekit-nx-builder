@@ -32,7 +32,7 @@ export const noRawClassname: Rule.RuleModule = {
     schema: [],
     messages: {
       rawClassname:
-        'Raw className string literals are forbidden here. Use the component\'s variant props, or a recipe function call (e.g. cva/sva output), instead of inline utility classes.',
+        "Raw className string literals are forbidden here. Use the component's variant props, or a recipe function call (e.g. cva/sva output), instead of inline utility classes.",
     },
   },
   create(context) {
@@ -41,7 +41,7 @@ export const noRawClassname: Rule.RuleModule = {
         if (node.name?.type !== 'JSXIdentifier' || node.name.name !== 'className') {
           return;
         }
-        const value = node.value;
+        const { value } = node;
         if (!value) {
           return;
         }

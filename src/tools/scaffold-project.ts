@@ -5,34 +5,20 @@ import { scaffoldNxWorkspace } from './scaffold-workspace.js';
 import { addUiLibrary, type AddUiLibraryTheming } from './add-ui-library.js';
 import { setupStorybook } from './setup-storybook.js';
 import { setupLintFormat } from './setup-lint-format.js';
-import { setupAuth, type IdentityProviders } from './setup-auth.js';
-
-const themingSchema = z.discriminatedUnion('mode', [
-  z.object({
-    mode: z.literal('interactive'),
-    primary: z.string(),
-    secondary: z.string(),
-    accent: z.string().optional(),
-    background: z.string().optional(),
-  }),
-  z.object({ mode: z.literal('paste'), pasted: z.string() }),
-]);
+import { setupAuth, identityProvidersSchema, type IdentityProviders } from './setup-auth.js';
+import { themingInputSchema } from '../ui-lib/theming.js';
 
 const scaffoldProjectInputSchema = z.object({
   targetDir: z.string().describe('Absolute path to an empty directory to scaffold the full project into.'),
   projectName: z.string().describe('Project name — also used as the app slug under apps/.'),
-  theming: themingSchema.describe('Single theming step: interactive hex entry or paste (CSS vars / Panda token JSON, auto-detected).'),
+  theming: themingInputSchema.describe(
+    'Single theming step: interactive hex entry or paste (CSS vars / Panda token JSON, auto-detected).',
+  ),
   library: z.enum(['panda-ark', 'shadcn-tailwind']).default('panda-ark'),
   linter: z.enum(['oxlint', 'eslint']).default('oxlint'),
   installChromatic: z.boolean().default(false),
   authEngine: z.enum(['clerk', 'self-hosted']).default('clerk'),
-  identityProviders: z
-    .object({
-      email: z.enum(['password', 'magic-link']).default('password'),
-      google: z.boolean().default(false),
-      github: z.boolean().default(false),
-    })
-    .default({ email: 'password', google: false, github: false }),
+  identityProviders: identityProvidersSchema.default({ email: 'password', google: false, github: false }),
 });
 
 export function registerScaffoldProjectTool(server: McpServer): void {
@@ -51,25 +37,39 @@ export function registerScaffoldProjectTool(server: McpServer): void {
 
       const steps: string[] = [];
 
-      const scaffoldResult = await scaffoldNxWorkspace(targetDir, projectName);
-      steps.push(`Stage A — workspace scaffolded (nx ${scaffoldResult.nxVersion}), app: apps/${projectName}`);
+      try {
+        const scaffoldResult = await scaffoldNxWorkspace(targetDir, projectName);
+        steps.push(`Stage A — workspace scaffolded (nx ${scaffoldResult.nxVersion}), app: apps/${projectName}`);
 
-      const uiMessage = await addUiLibrary(targetDir, projectName, library, theming as AddUiLibraryTheming);
-      steps.push(`Stage B — ${uiMessage}`);
+        const uiMessage = await addUiLibrary(targetDir, projectName, library, theming as AddUiLibraryTheming);
+        steps.push(`Stage B — ${uiMessage}`);
 
-      const storybookMessage = await setupStorybook(targetDir, installChromatic);
-      steps.push(`Stage C (Storybook) — ${storybookMessage}`);
+        const storybookMessage = await setupStorybook(targetDir, installChromatic);
+        steps.push(`Stage C (Storybook) — ${storybookMessage}`);
 
-      const lintMessage = await setupLintFormat(targetDir, linter);
-      steps.push(`Stage C (lint/format) — ${lintMessage}`);
+        const lintMessage = await setupLintFormat(targetDir, linter);
+        steps.push(`Stage C (lint/format) — ${lintMessage}`);
 
-      const authMessage = await setupAuth(targetDir, projectName, authEngine, identityProviders as IdentityProviders);
-      steps.push(`Stage D (auth) — ${authMessage}`);
+        const authMessage = await setupAuth(targetDir, projectName, authEngine, identityProviders as IdentityProviders);
+        steps.push(`Stage D (auth) — ${authMessage}`);
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `forgekit-reactor scaffold failed at ${targetDir} after ${steps.length} completed step(s):\n\n` +
+                `${steps.map((s) => `- ${s}`).join('\n')}\n\n` +
+                `Failure: ${(error as Error).message}\n\n` +
+                'The workspace is left in this partial state — re-run the individual failed stage tool once the underlying issue is fixed, rather than re-running scaffold-project from scratch.',
+            },
+          ],
+          isError: true,
+        };
+      }
 
       steps.push(
         'Stage E (backend/BFF) — deferred to v2, skipped by design (not silently dropped: the plan commits to frontend-only for this MVP).',
-      );
-      steps.push(
         'Design source (Figma-in / code-to-Figma) — deferred to v2, skipped by design.',
       );
 

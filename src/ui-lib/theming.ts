@@ -1,3 +1,5 @@
+import * as z from 'zod/v4';
+
 export interface TokenScale {
   colors: {
     primary: { value: string };
@@ -7,7 +9,23 @@ export interface TokenScale {
   };
 }
 
-const HEX_PATTERN = /^#[0-9a-fA-F]{3,8}$/;
+const HEX_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+// Pasted content is untrusted and unauthenticated (a single MCP call, no
+// confirmation gate) — cap it before either parser touches it.
+export const MAX_THEME_BYTES = 64 * 1024;
+
+/** Shared by add-ui-library and scaffold-project — identical theming input shape. */
+export const themingInputSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('interactive'),
+    primary: z.string(),
+    secondary: z.string(),
+    accent: z.string().optional(),
+    background: z.string().optional(),
+  }),
+  z.object({ mode: z.literal('paste'), pasted: z.string().max(MAX_THEME_BYTES) }),
+]);
 
 export interface HexThemeInput {
   primary: string;
@@ -62,7 +80,12 @@ function requireHex(name: string, value: string): string {
 }
 
 function normalizeCssVars(pasted: string): TokenScale {
-  const declarations = [...pasted.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)];
+  // Bounded, non-backtracking — the prior /--([\w-]+)\s*:\s*([^;]+);/g pattern
+  // hung 24s+ on ~80KB of adversarial pasted input (quadratic backtracking
+  // between the \s* runs and the value class). Bounding the name/value
+  // lengths (not line-anchoring — declarations are commonly all on one line,
+  // e.g. `:root{--primary: #fff; --secondary: #000;}`) removes the blowup.
+  const declarations = [...pasted.matchAll(/--([A-Za-z0-9_-]{1,64})[^\S\n]*:([^;\n]{0,256});/g)];
   const map: Record<string, string> = {};
   for (const [, name, value] of declarations) {
     map[name!.toLowerCase()] = value!.trim();
@@ -74,8 +97,8 @@ function normalizeCssVars(pasted: string): TokenScale {
     throw new Error('Pasted CSS vars must define at least --primary and --secondary.');
   }
 
-  const accent = map['accent'];
-  const background = map['background'];
+  const { accent } = map;
+  const { background } = map;
 
   return {
     colors: {
@@ -87,6 +110,21 @@ function normalizeCssVars(pasted: string): TokenScale {
   };
 }
 
+function extractTokenValue(entry: unknown): string | undefined {
+  if (typeof entry === 'string') {
+    return entry;
+  }
+  if (
+    entry &&
+    typeof entry === 'object' &&
+    'value' in entry &&
+    typeof (entry as { value: unknown }).value === 'string'
+  ) {
+    return (entry as { value: string }).value;
+  }
+  return undefined;
+}
+
 function normalizePandaJson(pasted: string): TokenScale {
   let parsed: { colors?: Record<string, unknown> } & Record<string, unknown>;
   try {
@@ -96,20 +134,14 @@ function normalizePandaJson(pasted: string): TokenScale {
   }
   const colors = parsed.colors ?? parsed;
 
-  const extractValue = (entry: unknown): string | undefined => {
-    if (typeof entry === 'string') return entry;
-    if (entry && typeof entry === 'object' && 'value' in entry) return (entry as { value: string }).value;
-    return undefined;
-  };
-
-  const primary = extractValue(colors.primary);
-  const secondary = extractValue(colors.secondary);
+  const primary = extractTokenValue(colors.primary);
+  const secondary = extractTokenValue(colors.secondary);
   if (!primary || !secondary) {
     throw new Error('Pasted Panda token JSON must define at least colors.primary and colors.secondary.');
   }
 
-  const accent = extractValue(colors.accent);
-  const background = extractValue(colors.background);
+  const accent = extractTokenValue(colors.accent);
+  const background = extractTokenValue(colors.background);
 
   return {
     colors: {
@@ -122,9 +154,16 @@ function normalizePandaJson(pasted: string): TokenScale {
 }
 
 export function normalizePastedTheme(pasted: string): TokenScale {
+  if (pasted.length > MAX_THEME_BYTES) {
+    throw new Error(`Pasted theme content is too large (${pasted.length} bytes, max ${MAX_THEME_BYTES}).`);
+  }
   const format = detectThemeFormat(pasted);
-  if (format === 'css-vars') return normalizeCssVars(pasted);
-  if (format === 'panda-json') return normalizePandaJson(pasted);
+  if (format === 'css-vars') {
+    return normalizeCssVars(pasted);
+  }
+  if (format === 'panda-json') {
+    return normalizePandaJson(pasted);
+  }
   throw new Error(
     'Could not detect pasted theme format. Expected either a CSS vars block (":root{--primary: ...}") or a Panda token JSON object.',
   );

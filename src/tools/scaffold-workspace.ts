@@ -3,9 +3,10 @@ import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { FRAMEWORK_CHOICES, isFrameworkSupported, validateProjectName } from '../wizard/types.js';
-import { comingSoonMessage } from '../wizard/comingSoon.js';
+import { comingSoonMessage } from '../wizard/coming-soon.js';
 import { run } from '../lib/run-command.js';
 import { readJson, writeJson, type PackageJsonLike } from '../lib/json-file.js';
+import { validateNewTargetDir } from '../lib/validate-target.js';
 
 const ZUSTAND_VERSION = '^5.0.0';
 
@@ -25,7 +26,8 @@ export interface ScaffoldResult {
   nxVersion: string;
 }
 
-export async function scaffoldNxWorkspace(targetDir: string, appName: string): Promise<ScaffoldResult> {
+export async function scaffoldNxWorkspace(targetDirInput: string, appName: string): Promise<ScaffoldResult> {
+  const targetDir = validateNewTargetDir(targetDirInput);
   assertEmptyDir(targetDir);
 
   // 1. Bare empty NX workspace, scaffolded directly into the target dir.
@@ -54,7 +56,7 @@ export async function scaffoldNxWorkspace(targetDir: string, appName: string): P
     throw new Error('Could not determine installed nx version from generated package.json.');
   }
 
-  rootPkg.pnpm = { ...(rootPkg.pnpm ?? {}), onlyBuiltDependencies: ['nx'] };
+  rootPkg.pnpm = { ...rootPkg.pnpm, onlyBuiltDependencies: ['nx'] };
   writeJson(rootPkgPath, rootPkg);
 
   await run('pnpm', ['add', '-D', `nx@${nxVersion}`, `@nx/js@${nxVersion}`, `@nx/react@${nxVersion}`], targetDir);
@@ -102,7 +104,7 @@ export async function scaffoldNxWorkspace(targetDir: string, appName: string): P
   //    TanStack Query owns server state, Zustand owns local/global UI state).
   const appPkgPath = join(targetDir, 'apps', appName, 'package.json');
   const appPkg = readJson<PackageJsonLike>(appPkgPath);
-  appPkg.dependencies = { ...(appPkg.dependencies ?? {}), zustand: ZUSTAND_VERSION };
+  appPkg.dependencies = { ...appPkg.dependencies, zustand: ZUSTAND_VERSION };
   writeJson(appPkgPath, appPkg);
   await run('pnpm', ['install'], targetDir);
 

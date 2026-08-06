@@ -1,6 +1,5 @@
-import { describe, expect, test, afterEach } from 'vitest';
-import { Client } from '@modelcontextprotocol/client';
-import { InMemoryTransport } from '@modelcontextprotocol/client';
+import { afterEach, describe, expect, it } from 'vitest';
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { createServer } from './server.js';
 
 describe('forgekit-reactor MCP server', () => {
@@ -10,7 +9,7 @@ describe('forgekit-reactor MCP server', () => {
     await client?.close();
   });
 
-  test('initializes and responds to a ping tool call', async () => {
+  it('initializes and responds to a ping tool call', async () => {
     const server = createServer();
     client = new Client({ name: 'test-harness', version: '1.0.0' });
 
@@ -19,7 +18,7 @@ describe('forgekit-reactor MCP server', () => {
 
     const result = await client.callTool({ name: 'ping', arguments: {} });
 
-    expect(result.content).toEqual(
+    expect(result.content).toStrictEqual(
       expect.arrayContaining([expect.objectContaining({ type: 'text', text: 'pong' })]),
     );
   });

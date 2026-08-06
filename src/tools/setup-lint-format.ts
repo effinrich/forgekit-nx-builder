@@ -1,9 +1,67 @@
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
-import { readJson, type PackageJsonLike } from '../lib/json-file.js';
+import { readJson, writeJson, type PackageJsonLike } from '../lib/json-file.js';
+import { validateExistingWorkspace } from '../lib/validate-target.js';
+import { ensureEslintDeps } from '../lib/ensure-eslint-deps.js';
+
+interface NxTargetsPackageJson extends PackageJsonLike {
+  nx?: { targets?: Record<string, unknown> };
+}
+
+/**
+ * add-ui-library's shadcn/Tailwind path emits a classname-lint rule to disk
+ * (.eslint-rules/no-raw-classname.cjs + eslint.config.local.mjs) but nothing
+ * previously ran it — the "raw utility classnames are linted as errors"
+ * guarantee didn't actually hold. Wires it as a real NX target and makes the
+ * project's main `lint` target depend on it, so `nx run <lib>:lint` (and
+ * `nx run-many -t lint`) enforce it automatically regardless of which linter
+ * (Oxlint or ESLint) is the primary choice — Oxlint can't load this custom
+ * JS rule itself (see the comment in setupOxlintOxfmt), so this runs
+ * alongside it as a dependency of the same target name, not merged into it.
+ */
+async function wireClassnameLintTarget(targetDir: string): Promise<void> {
+  const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
+  if (!existsSync(join(uiLibDir, '.eslint-rules', 'no-raw-classname.cjs'))) {
+    return; // panda-ark path — no classname rule was emitted, nothing to wire.
+  }
+
+  // The classname rule's config imports the typescript-eslint parser to parse
+  // .tsx syntax — needed even when Oxlint is the primary linter, which never
+  // installs ESLint at all. add-ui-library also ensures this (it can run
+  // standalone without this tool), but re-checking here is cheap and correct
+  // if this tool ever runs first against a rule file written some other way.
+  await ensureEslintDeps(targetDir);
+
+  const pkgPath = join(uiLibDir, 'package.json');
+  const pkg = readJson<NxTargetsPackageJson>(pkgPath);
+  // Merge onto any pre-existing `lint` target rather than overwriting it —
+  // safe today only because @nx-oxc/nx's inferred `lint` target has no
+  // explicit package.json counterpart to clobber, but that's a third-party
+  // default this shouldn't depend on staying true.
+  const existingLint = (pkg.nx?.targets?.['lint'] ?? {}) as { dependsOn?: unknown } & Record<string, unknown>;
+  const existingDependsOn = Array.isArray(existingLint.dependsOn) ? (existingLint.dependsOn as string[]) : [];
+  pkg.nx = {
+    ...pkg.nx,
+    targets: {
+      ...pkg.nx?.targets,
+      'lint-classnames': {
+        executor: 'nx:run-commands',
+        options: {
+          command: 'npx eslint --no-config-lookup --config eslint.config.local.mjs src',
+          cwd: 'libs/shared/ui',
+        },
+      },
+      lint: {
+        ...existingLint,
+        dependsOn: [...new Set([...existingDependsOn, 'lint-classnames'])],
+      },
+    },
+  };
+  writeJson(pkgPath, pkg);
+}
 
 async function setupOxlintOxfmt(targetDir: string): Promise<string> {
   // nx add handles the workspace-root pnpm install itself — a plain
@@ -22,10 +80,11 @@ async function setupOxlintOxfmt(targetDir: string): Promise<string> {
   // Oxlint (as currently installed) has no confirmed way to load custom
   // JS-plugin rules — .oxlintrc.json only accepts its own named built-in
   // plugins. The classname-lint rule from add-ui-library (when the
-  // shadcn/Tailwind path was chosen) stays on its own separate ESLint
-  // config file, run alongside Oxlint rather than merged into it — the two
+  // shadcn/Tailwind path was chosen) runs as a separate NX target that the
+  // main `lint` target depends on (see wireClassnameLintTarget) — the two
   // tools structurally can't clobber each other since they're entirely
-  // separate configs/invocations.
+  // separate configs/invocations, just chained via NX's task graph.
+  await wireClassnameLintTarget(targetDir);
 
   return `Configured Oxlint + Oxfmt (via @nx-oxc/nx) for ${libPkg.name}. Run "npx nx run ${libPkg.name}:lint", ":format", or ":format-check".`;
 }
@@ -52,6 +111,8 @@ async function setupEslintPrettier(targetDir: string): Promise<string> {
       `);\n`,
   );
 
+  await wireClassnameLintTarget(targetDir);
+
   return `Configured ESLint + Prettier for ${libPkg.name}. Run "npx nx run ${libPkg.name}:lint" and "npx prettier --write .".`;
 }
 
@@ -60,10 +121,13 @@ const setupLintFormatInputSchema = z.object({
   linter: z
     .enum(['oxlint', 'eslint'])
     .default('oxlint')
-    .describe('Lint/format tooling choice. Default is Oxlint + Oxfmt (via @nx-oxc/nx); ESLint + Prettier is the alternative.'),
+    .describe(
+      'Lint/format tooling choice. Default is Oxlint + Oxfmt (via @nx-oxc/nx); ESLint + Prettier is the alternative.',
+    ),
 });
 
-export async function setupLintFormat(targetDir: string, linter: 'oxlint' | 'eslint'): Promise<string> {
+export async function setupLintFormat(targetDirInput: string, linter: 'oxlint' | 'eslint'): Promise<string> {
+  const targetDir = validateExistingWorkspace(targetDirInput);
   return linter === 'oxlint' ? setupOxlintOxfmt(targetDir) : setupEslintPrettier(targetDir);
 }
 

@@ -1,0 +1,74 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "node", "promise", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "style": "error",
+    "pedantic": "warn"
+  },
+  "rules": {
+    // Off globally: 50+ hits are readFileSync/writeFileSync/mkdirSync on
+    // small local files across the generators, which don't meaningfully
+    // block the event loop. The real risk this rule guards against —
+    // reintroducing a synchronous, multi-minute subprocess call — is
+    // re-enabled just for run-command.ts below, the one file where it
+    // would matter (see the override; every tool spawns subprocesses
+    // exclusively through its async run() export).
+    "node/no-sync": "off",
+    "node/no-process-env": "off",
+    "eslint/sort-keys": "off",
+    "eslint/sort-imports": "off",
+    "eslint/capitalized-comments": "off",
+    "eslint/id-length": "off",
+    "eslint/no-ternary": "off",
+    "eslint/no-inline-comments": "off",
+    "eslint/func-style": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/prefer-named-capture-group": "off",
+    "eslint/init-declarations": "off",
+    "eslint/max-params": "off",
+    "eslint/max-statements": "warn",
+    "eslint/no-template-curly-in-string": "off",
+    "unicorn/no-null": "off",
+    "unicorn/max-nested-calls": "off",
+    "vitest/no-hooks": "off",
+    "vitest/max-expects": "off",
+    "vitest/prefer-expect-assertions": "off",
+    "vitest/require-test-timeout": "off",
+    "vitest/require-hook": "off",
+    "typescript/explicit-function-return-type": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/run-command.ts"],
+      "rules": {
+        "node/no-sync": "error"
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "vitest/prefer-strict-boolean-matchers": "off",
+        "vitest/prefer-to-be-truthy": "off",
+        "vitest/prefer-to-be-falsy": "off",
+        "vitest/prefer-strict-equal": "off",
+        "vitest/prefer-importing-vitest-globals": "off",
+        "vitest/no-importing-vitest-globals": "off",
+        "vitest/consistent-test-it": "off",
+        "vitest/require-to-throw-message": "off",
+        "vitest/expect-expect": "off",
+        "vitest/no-conditional-in-test": "off",
+        "eslint/max-statements": "off",
+        "eslint/max-lines-per-function": "off",
+        "unicorn/max-nested-calls": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "node_modules/**", ".supergoal/**", ".omc/**"],
+  "env": {
+    "builtin": true,
+    "node": true
+  }
+}

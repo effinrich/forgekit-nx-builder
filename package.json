@@ -6,7 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/effinrich/forgekit-nx-builder.git"
+    "url": "git+https://github.com/effinrich/forgekit-reactor.git"
+  },
+  "homepage": "https://github.com/effinrich/forgekit-reactor#readme",
+  "bugs": {
+    "url": "https://github.com/effinrich/forgekit-reactor/issues"
   },
   "keywords": [
     "mcp",
@@ -21,8 +25,6 @@
   "bin": {
     "forgekit-reactor": "./dist/index.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "!dist/**/*.test.js",
@@ -32,9 +34,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint .",
+    "lint": "oxlint --max-warnings=53",
+    "format": "oxfmt src",
+    "format:check": "oxfmt --check src",
     "test": "vitest run",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
@@ -44,8 +49,9 @@
     "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^22.0.0",
     "eslint": "^10.8.0",
+    "oxfmt": "0.62.0",
+    "oxlint": "1.77.0",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.66.0",
     "vitest": "^3.0.0"
   },
   "engines": {

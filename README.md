@@ -106,7 +106,7 @@ Stage B. Installs the chosen UI kit into `libs/shared/ui` and applies theming.
 | Param | Type | Default |
 |---|---|---|
 | `targetDir` | `string` | — |
-| `appName` | `string` | `'app'` |
+| `appName` | `string` (optional) | auto-discovered from the single app under `apps/` |
 | `library` | `'panda-ark'` \| `'shadcn-tailwind'` | `'panda-ark'` |
 | `theming` | same shape as `scaffold-project`'s `theming` | — |
 
@@ -139,7 +139,7 @@ Stage D. Generates Clerk-backed first-party sign-in/up screens and a user schema
 | Param | Type | Default |
 |---|---|---|
 | `targetDir` | `string` | — |
-| `appName` | `string` | `'app'` |
+| `appName` | `string` (optional) | auto-discovered from the single app under `apps/` |
 | `authEngine` | `'clerk'` \| `'self-hosted'` | `'clerk'` |
 | `identityProviders` | `{ email, google, github }` | `{ email: 'password', google: false, github: false }` |
 

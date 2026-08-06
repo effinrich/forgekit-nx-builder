@@ -18,7 +18,7 @@ const execFileAsync = promisify(execFile);
 export async function run(cmd: string, args: string[], cwd: string): Promise<string> {
   const { stdout } = await execFileAsync(cmd, args, {
     cwd,
-    encoding: 'utf-8',
+    encoding: 'utf8',
     maxBuffer: 1024 * 1024 * 32,
     env: { ...process.env, NX_DAEMON: 'false' },
   });

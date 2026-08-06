@@ -11,9 +11,9 @@ export interface TsconfigLike {
 }
 
 export function readJson<T = unknown>(path: string): T {
-  return JSON.parse(readFileSync(path, 'utf-8')) as T;
+  return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
 
 export function writeJson(path: string, value: unknown): void {
-  writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }

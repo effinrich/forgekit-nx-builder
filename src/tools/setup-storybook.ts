@@ -4,13 +4,14 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
 import { readJson, type PackageJsonLike } from '../lib/json-file.js';
+import { validateExistingWorkspace } from '../lib/validate-target.js';
 
 const CHROMATIC_PROMPT =
   'Install Chromatic? (visual regression testing for Storybook — catches unintended UI changes) [y/N]';
 
 function patchMainAddons(uiLibDir: string): void {
   const mainPath = join(uiLibDir, '.storybook', 'main.ts');
-  let main = readFileSync(mainPath, 'utf-8');
+  let main = readFileSync(mainPath, 'utf8');
   if (main.includes('addons: [],')) {
     main = main.replace('addons: [],', "addons: ['@storybook/addon-a11y', '@storybook/addon-vitest'],");
     writeFileSync(mainPath, main);
@@ -20,7 +21,10 @@ function patchMainAddons(uiLibDir: string): void {
 function writeVitestSetup(uiLibDir: string): void {
   // Storybook >= 10.3 applies preview annotations automatically; an explicit
   // setProjectAnnotations() call is unnecessary and prints a warning.
-  writeFileSync(join(uiLibDir, '.storybook', 'vitest.setup.ts'), '// Storybook >= 10.3 applies preview annotations automatically.\nexport {};\n');
+  writeFileSync(
+    join(uiLibDir, '.storybook', 'vitest.setup.ts'),
+    '// Storybook >= 10.3 applies preview annotations automatically.\nexport {};\n',
+  );
 }
 
 function writePreviewConfig(uiLibDir: string): void {
@@ -95,16 +99,18 @@ function writeStorybookVitestProject(uiLibDir: string): void {
  */
 function fixCheckboxStoryArgs(uiLibDir: string): void {
   const storyPath = join(uiLibDir, 'src', 'lib', 'checkbox.stories.tsx');
-  if (!existsSync(storyPath)) return;
-  let story = readFileSync(storyPath, 'utf-8');
-  story = story.replace(/label: '',/g, "label: 'Accept terms',");
+  if (!existsSync(storyPath)) {
+    return;
+  }
+  let story = readFileSync(storyPath, 'utf8');
+  story = story.replaceAll("label: '',", "label: 'Accept terms',");
   story = story.replace('/Checkbox/gi', '/Accept terms/gi');
   writeFileSync(storyPath, story);
 }
 
 function appendChromaticReadme(targetDir: string, accepted: boolean): void {
   const readmePath = join(targetDir, 'README.md');
-  const existing = existsSync(readmePath) ? readFileSync(readmePath, 'utf-8') : '';
+  const existing = existsSync(readmePath) ? readFileSync(readmePath, 'utf8') : '';
   const lines = [
     '\n## Storybook & Chromatic\n',
     `\`${CHROMATIC_PROMPT}\`\n`,
@@ -116,7 +122,8 @@ function appendChromaticReadme(targetDir: string, accepted: boolean): void {
   writeFileSync(readmePath, existing + lines.join('\n'));
 }
 
-export async function setupStorybook(targetDir: string, installChromatic: boolean): Promise<string> {
+export async function setupStorybook(targetDirInput: string, installChromatic: boolean): Promise<string> {
+  const targetDir = validateExistingWorkspace(targetDirInput);
   const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
   const libPkg = readJson<PackageJsonLike>(join(uiLibDir, 'package.json'));
 
@@ -164,7 +171,18 @@ export async function setupStorybook(targetDir: string, installChromatic: boolea
   if (installChromatic) {
     const hasToken = Boolean(process.env['CHROMATIC_PROJECT_TOKEN']);
     if (hasToken) {
-      await run('npx', ['--yes', 'chromatic', '--project-token', process.env['CHROMATIC_PROJECT_TOKEN']!], uiLibDir);
+      // The token is already in the inherited environment (run() forwards
+      // process.env) and the chromatic CLI reads CHROMATIC_PROJECT_TOKEN
+      // natively — never pass it as a CLI arg, which would land in
+      // Error.message on failure and in `ps` output for the process lifetime.
+      try {
+        await run('npx', ['--yes', 'chromatic'], uiLibDir);
+      } catch {
+        throw new Error(
+          'Chromatic publish failed. Check that CHROMATIC_PROJECT_TOKEN is valid and the project is linked — ' +
+            'error details omitted here since subprocess failures can echo the token.',
+        );
+      }
     }
     // No token available: first-time linking needs interactive browser auth
     // (see appendChromaticReadme) — trust-prior-verify, not fakeable headlessly.
@@ -178,20 +196,19 @@ export async function setupStorybook(targetDir: string, installChromatic: boolea
 }
 
 const setupStorybookInputSchema = z.object({
-  targetDir: z.string().describe('Absolute path to a workspace already scaffolded, with libs/shared/ui populated by add-ui-library.'),
-  installChromatic: z
-    .boolean()
-    .default(false)
-    .describe(CHROMATIC_PROMPT),
+  targetDir: z
+    .string()
+    .describe('Absolute path to a workspace already scaffolded, with libs/shared/ui populated by add-ui-library.'),
+  installChromatic: z.boolean().default(false).describe(CHROMATIC_PROMPT),
 });
 
 export function registerSetupStorybookTool(server: McpServer): void {
   server.registerTool(
     'setup-storybook',
     {
-      description:
-        'Stage C (Storybook) of the forgekit-reactor wizard: configures Storybook for libs/shared/ui with auto-generated stories, a11y and interaction-test addons (Playwright-backed), and optionally Chromatic. ' +
-        CHROMATIC_PROMPT,
+      description: `Stage C (Storybook) of the forgekit-reactor wizard: configures Storybook for libs/shared/ui with auto-generated stories, a11y and interaction-test addons (Playwright-backed), and optionally Chromatic. ${
+        CHROMATIC_PROMPT
+      }`,
       inputSchema: setupStorybookInputSchema,
     },
     async ({ targetDir, installChromatic }) => {
