@@ -5,7 +5,8 @@ import * as z from 'zod/v4';
 import { FRAMEWORK_CHOICES, isFrameworkSupported, validateProjectName } from '../wizard/types.js';
 import { comingSoonMessage } from '../wizard/coming-soon.js';
 import { run } from '../lib/run-command.js';
-import { readJson, writeJson, type PackageJsonLike } from '../lib/json-file.js';
+import { readJson, writeJson } from '../lib/json-file.js';
+import type { PackageJsonLike } from '../lib/json-file.js';
 import { validateNewTargetDir } from '../lib/validate-target.js';
 
 const ZUSTAND_VERSION = '^5.0.0';

@@ -2,18 +2,15 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import {
-  normalizePastedTheme,
-  tokensFromHex,
-  tokenScaleToPandaConfigSnippet,
-  themingInputSchema,
-  type TokenScale,
-} from '../ui-lib/theming.js';
-import { getFigmaKitInfo, type UiLibraryChoice } from '../ui-lib/figma-links.js';
+import { normalizePastedTheme, tokensFromHex, tokenScaleToPandaConfigSnippet, themingInputSchema } from '../ui-lib/theming.js';
+import type { TokenScale } from '../ui-lib/theming.js';
+import { getFigmaKitInfo } from '../ui-lib/figma-links.js';
+import type { UiLibraryChoice } from '../ui-lib/figma-links.js';
 import { emitNoRawClassnameRuleFile } from '../ui-lib/emit-lint-rule.js';
 import { PROJECT_NAME_PATTERN } from '../wizard/types.js';
 import { run } from '../lib/run-command.js';
-import { readJson, writeJson, type PackageJsonLike, type TsconfigLike } from '../lib/json-file.js';
+import { readJson, writeJson } from '../lib/json-file.js';
+import type { PackageJsonLike, TsconfigLike } from '../lib/json-file.js';
 import { validateExistingWorkspace, resolveAppName } from '../lib/validate-target.js';
 import { ensureEslintDeps } from '../lib/ensure-eslint-deps.js';
 
