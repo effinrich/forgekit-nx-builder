@@ -3,7 +3,7 @@
   "targetDefaults": {
     "build": {
       "outputs": [
-        "{projectRoot}/yes"
+        "{projectRoot}/dist"
       ],
       "cache": true
     },
@@ -26,6 +26,9 @@
       "cache": true
     },
     "start": {
+      "cache": true
+    },
+    "lint:fix": {
       "cache": true
     }
   },
