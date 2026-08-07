@@ -2,10 +2,12 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { validateProjectName } from '../wizard/types.js';
 import { scaffoldNxWorkspace } from './scaffold-workspace.js';
-import { addUiLibrary, type AddUiLibraryTheming } from './add-ui-library.js';
+import { addUiLibrary } from './add-ui-library.js';
+import type { AddUiLibraryTheming } from './add-ui-library.js';
 import { setupStorybook } from './setup-storybook.js';
 import { setupLintFormat } from './setup-lint-format.js';
-import { setupAuth, identityProvidersSchema, type IdentityProviders } from './setup-auth.js';
+import { setupAuth, identityProvidersSchema } from './setup-auth.js';
+import type { IdentityProviders } from './setup-auth.js';
 import { themingInputSchema } from '../ui-lib/theming.js';
 
 const scaffoldProjectInputSchema = z.object({

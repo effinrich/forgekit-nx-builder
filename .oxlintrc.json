@@ -1,12 +1,36 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "node", "promise", "vitest"],
+  "plugins": [
+    "react",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "jsx-a11y",
+    "node",
+    "promise",
+    "vitest"
+  ],
+  // "categories": {
+  //   "correctness": "error",
+  //   "perf": "warn",
+  //   "suspicious": "warn",
+  //   "pedantic": "off",
+  //   "style": "off"
+  // },
+
   "categories": {
     "correctness": "error",
     "suspicious": "error",
     "perf": "error",
     "style": "error",
     "pedantic": "warn"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true,
+    "builtin": true
   },
   "rules": {
     // Off globally: 50+ hits are readFileSync/writeFileSync/mkdirSync on
@@ -38,7 +62,25 @@
     "vitest/prefer-expect-assertions": "off",
     "vitest/require-test-timeout": "off",
     "vitest/require-hook": "off",
-    "typescript/explicit-function-return-type": "off"
+    "typescript/explicit-function-return-type": "off",
+    "no-console": "off",
+    "no-unused-vars": "warn",
+    "typescript/no-unused-vars": "warn",
+    "typescript/no-explicit-any": "warn",
+    "react/jsx-key": "error",
+    "react/no-array-index-key": "off",
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": "off",
+    // Node MCP/CLI: builtins (fs, path, child_process, …) are intentional.
+    "import/no-nodejs-modules": "off",
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+        // "checkDirectories": false,
+        // "ignore": "^(AGENTS\\.md|README\\.md|CHANGELOG\\.md|LICENSE|__root\\.tsx|routeTree\\.gen\\.ts|\\d{14}_[a-f0-9-]+\\.sql)$"
+      }
+    ]
   },
   "overrides": [
     {
@@ -66,9 +108,21 @@
       }
     }
   ],
-  "ignorePatterns": ["dist/**", "node_modules/**", ".supergoal/**", ".omc/**"],
-  "env": {
-    "builtin": true,
-    "node": true
-  }
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    ".supergoal/**",
+    ".omc/**",
+    "dist-ssr",
+    ".output",
+    ".vinxi",
+    ".tanstack/**",
+    ".nitro",
+    ".wrangler/",
+    "storybook-static/**",
+    "src/routeTree.gen.ts",
+    "src/integrations/supabase/types.ts",
+    "src/integrations/supabase/client.ts",
+    "src/integrations/supabase/client.server.ts"
+  ]
 }
