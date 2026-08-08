@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "name": "forgekit-reactor",
+  "generators": {
+    "add-ui-library": {
+      "factory": "./dist/generators/add-ui-library/generator.js",
+      "schema": "./dist/generators/add-ui-library/schema.json",
+      "description": "Install Panda CSS + Ark UI (or Tailwind + shadcn/ui, opt-in) into libs/shared/ui of an existing NX workspace, wire it into an app, and apply theming — the same logic forgekit-reactor's MCP wizard uses for Stage B."
+    }
+  }
+}

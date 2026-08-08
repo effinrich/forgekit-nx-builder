@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "ForgekitReactorAddUiLibrary",
+  "title": "Add UI Library",
+  "description": "Install Panda CSS + Ark UI (or Tailwind + shadcn/ui) into libs/shared/ui, wire it into an app, apply theming.",
+  "type": "object",
+  "properties": {
+    "appName": {
+      "type": "string",
+      "description": "The app slug under apps/ to wire the UI library into. Omit to auto-discover the single app under apps/.",
+      "x-priority": "important"
+    },
+    "library": {
+      "type": "string",
+      "enum": ["panda-ark", "shadcn-tailwind"],
+      "default": "panda-ark",
+      "description": "UI library choice. Default is Panda CSS + Ark UI; shadcn/Tailwind is an opt-in escape hatch with classname-lint enforcement.",
+      "x-prompt": {
+        "message": "Which UI library?",
+        "type": "list",
+        "items": [
+          { "value": "panda-ark", "label": "Panda CSS + Ark UI (default)" },
+          { "value": "shadcn-tailwind", "label": "Tailwind + shadcn/ui (opt-in)" }
+        ]
+      }
+    },
+    "themingMode": {
+      "type": "string",
+      "enum": ["interactive", "paste"],
+      "default": "interactive",
+      "description": "Theming input mode: enter hex colors directly, or paste an existing theme (CSS vars / Panda token JSON, auto-detected)."
+    },
+    "primary": {
+      "type": "string",
+      "description": "Primary hex color, e.g. #3b82f6. Required when themingMode is 'interactive'.",
+      "x-prompt": "Primary color (hex, e.g. #3b82f6)?"
+    },
+    "secondary": {
+      "type": "string",
+      "description": "Secondary hex color, e.g. #111827. Required when themingMode is 'interactive'.",
+      "x-prompt": "Secondary color (hex, e.g. #111827)?"
+    },
+    "accent": {
+      "type": "string",
+      "description": "Optional accent hex color."
+    },
+    "background": {
+      "type": "string",
+      "description": "Optional background hex color."
+    },
+    "pasted": {
+      "type": "string",
+      "description": "Pasted theme content (CSS vars block or Panda token JSON, auto-detected). Required when themingMode is 'paste'. Max 64KB."
+    }
+  },
+  "required": ["themingMode"]
+}

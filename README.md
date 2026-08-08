@@ -121,7 +121,7 @@ Stage C (Storybook). Configures Storybook against `libs/shared/ui`.
 | `targetDir` | `string` | — |
 | `installChromatic` | `boolean` | `false` |
 
-If Chromatic is requested, the tool wires the CLI invocation and CI env-var guidance; first-time project linking needs a one-time interactive browser sign-in that can't be scripted, so that specific step is left to you.
+If Chromatic is requested, `@chromatic-com/storybook` is installed as a real Storybook addon (via `storybook add`, not a hand-rolled config patch) — sign in and link the project through its "Visual Tests" panel inside Storybook itself. A `.github/workflows/chromatic.yml` is also generated for automated publishing on push to `main`; add the resulting project token as a `CHROMATIC_PROJECT_TOKEN` repo secret to enable it. Creating a *new* Chromatic project always requires that one-time chromatic.com sign-in — no CLI or addon can script that part — but nothing about it happens during wizard execution.
 
 ### `setup-lint-format`
 

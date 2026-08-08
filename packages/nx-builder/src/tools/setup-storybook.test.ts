@@ -52,17 +52,32 @@ describe('setup-storybook tool', () => {
     });
     const result = await callSlowTool(client, {
       name: 'setup-storybook',
-      arguments: { targetDir, installChromatic: false },
+      arguments: { targetDir, installChromatic: true },
     });
     expect(result.isError).toBeFalsy();
 
     const uiLibDir = join(targetDir, 'libs', 'shared', 'ui');
 
     // Storybook config points at libs/shared/ui (it was generated there).
+    // Addons wired via `storybook add` (getAbsolutePath-wrapped), not regex —
+    // verified live to be the more robust mechanism.
     expect(existsSync(join(uiLibDir, '.storybook', 'main.ts'))).toBe(true);
     const mainConfig = readFileSync(join(uiLibDir, '.storybook', 'main.ts'), 'utf8');
     expect(mainConfig).toContain('@storybook/addon-a11y');
     expect(mainConfig).toContain('@storybook/addon-vitest');
+    expect(mainConfig).toContain('@chromatic-com/storybook');
+
+    // Chromatic: no live publish, no token needed at generation time — just
+    // the addon installed and a CI workflow file generated. Creating a new
+    // Chromatic project has no CLI path regardless of integration method
+    // (verified against Chromatic's own docs); the addon's sign-in happens
+    // inside Storybook's own UI, and the workflow only needs the token once
+    // it's added as a GitHub secret, never during wizard execution.
+    const chromaticWorkflowPath = join(targetDir, '.github', 'workflows', 'chromatic.yml');
+    expect(existsSync(chromaticWorkflowPath)).toBe(true);
+    const chromaticWorkflow = readFileSync(chromaticWorkflowPath, 'utf8');
+    expect(chromaticWorkflow).toContain('chromaui/action');
+    expect(chromaticWorkflow).toContain('CHROMATIC_PROJECT_TOKEN');
 
     // Auto-generated story exists for the existing primitive.
     expect(existsSync(join(uiLibDir, 'src', 'lib', 'ui.stories.tsx'))).toBe(true);
@@ -82,9 +97,12 @@ describe('setup-storybook tool', () => {
     });
     expect(buildOutput).toMatch(/Successfully ran target build-storybook/);
 
-    // Chromatic explainer copy present in README even when skipped.
+    // Chromatic explainer copy present in README, including the one-time
+    // chromatic.com signup step (no CLI path exists for creating a project).
     const readme = readFileSync(join(targetDir, 'README.md'), 'utf8');
     expect(readme).toContain('Install Chromatic?');
     expect(readme).toContain('CHROMATIC_PROJECT_TOKEN');
+    expect(readme).toContain('chromatic.com');
+    expect(readme).toContain('Visual Tests');
   }, 900_000);
 });

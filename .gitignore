@@ -7,3 +7,18 @@ dist/
 .DS_Store
 .omc/
 .supergoal/
+
+# Nested plugin workspace (separate git repo)
+nx-reactor/
+
+
+
+.nx/cache
+.nx/workspace-data
+.nx/migrate-runs
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+.claude/worktrees
+.claude/settings.local.json
+.nx/polygraph
+.nx/self-healing
