@@ -74,8 +74,9 @@ the failure and what you are doing about it.
 
 # Architecture
 
-- **Feature-based.** Group by feature, not by file type. `src/features/<feature>/`
-  holds that feature's components, hooks, types, and tests together.
+- **Feature-based.** Group by feature, not by file type. `<app>/src/features/<feature>/`
+  holds that feature's components, hooks, types, and tests together. `<app>` is
+  the app's root from workspace detection below — the repo root in a single app.
 - **Separation of concerns.** Data fetching, business logic, and presentation
   never live in the same module.
 - **kebab-case filenames** everywhere under `src/` — `bottom-nav-bar.tsx`,
@@ -95,38 +96,43 @@ Storybook. This is the core rule of the codebase:
 
 **The library owns everything visual. The app owns data and routing.**
 
+## Detect the workspace
+
+Before the first delegation, read the repo root. First match wins:
+
+| Signal | Shape | Apps / libs live in |
+|---|---|---|
+| `nx.json` | Nx | `workspaceLayout.appsDir` / `libsDir` in `nx.json`, else `apps/` and `libs/` |
+| `pnpm-workspace.yaml`, `turbo.json`, or `workspaces` in `package.json` | JS monorepo | the globs those files declare |
+| none | single app | repo root |
+
+Never assume `libs/` or `packages/` — the workspace config is the source of
+truth. State the detected shape and paths in the plan.
+
 ## Finding the library
 
-Resolve the path **before the first delegation**, and state the resolved path in
-every brief. Agents invent a location when this is vague, and the first wrong
-guess propagates through the whole build.
+Resolve the path **before the first delegation**, and state it in every brief.
+Agents invent a location when this is vague, and the first wrong guess
+propagates through the whole build.
 
-First existing directory wins, in this order:
-
-1. `libs/shared/ui/`
-2. `libs/ui/`
-3. `packages/shared/ui/`
-4. `packages/ui/`
+Search for an existing one instead of guessing paths:
 
 ```sh
-for d in libs/shared/ui libs/ui packages/shared/ui packages/ui; do [ -d "$d" ] && echo "$d"; done
+find . \( -name node_modules -o -name dist -o -name .git \) -prune -o \
+  -type d \( -name ui -o -name design-system \) -print -prune
 ```
 
-One hit → use it. Two or more → stop and ask which is canonical; do not guess,
-and do not split work across both.
+- One shared hit → use it.
+- Two or more, or the only hit is feature-scoped (`libs/<domain>/ui` is a
+  legitimate Nx pattern for a *feature's* UI) → report what you found and ask
+  which is canonical. Do not guess, and do not split work across both.
+- No hit → create one where the shape expects it, and say so in the plan:
 
-No hit → widen the search before creating anything:
-
-```sh
-find libs packages -maxdepth 3 -type d -name ui 2>/dev/null
-```
-
-This catches nonstandard homes, but a hit is not automatically the shared
-library — `libs/<domain>/ui` is a legitimate Nx pattern for a *feature's* UI
-lib. Report what you found and ask.
-
-Still nothing → create `libs/shared/ui/` and use it. Say so in the plan:
-`libs/` is an Nx shape, and in a non-Nx repo it may be the wrong place.
+| Shape | Create |
+|---|---|
+| Nx | `<libsDir>/shared/ui`, via the Nx library generator, not by hand |
+| JS monorepo | `packages/ui` — it must match a workspace glob, or add one |
+| single app | `src/ui/` |
 
 ## Layers
 
@@ -165,7 +171,7 @@ else. If a page grows conditional rendering, layout, or formatting logic, that
 logic belongs in the screen — move it.
 
 ```tsx
-// app/checkout/page.tsx
+// checkout page — wherever the app's router puts it
 export default function CheckoutPage() {
   const { data, isPending } = useOrder()
   return <CheckoutScreen order={data} isSubmitting={isPending} onSubmit={submit} />
@@ -191,11 +197,11 @@ Storybook is the test surface. Stories are the spec.
 - Unit tests are for pure logic (hooks, formatters, reducers). Do not unit-test
   rendering that a story already covers.
 
-## Nx + Storybook wiring traps
+## Wiring traps
 
-Verify these directly rather than trusting the generator:
+Verify these directly rather than trusting a generator:
 
-- Nx's Storybook generator leaves `.storybook/preview.ts` **empty** and does
+- **Nx only:** Nx's Storybook generator leaves `.storybook/preview.ts` **empty** and does
   **not** install the a11y or interaction addons despite the flag. Wire them
   by hand, or every a11y rule above is dead text.
 - Vitest 4 dropped workspace files. Use `defineProject`, not
