@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
-import { readJson, type PackageJsonLike } from '../lib/json-file.js';
+import { readJson } from '../lib/json-file.js';
+import type { PackageJsonLike } from '../lib/json-file.js';
 import { validateExistingWorkspace } from '../lib/validate-target.js';
 
 const CHROMATIC_PROMPT =

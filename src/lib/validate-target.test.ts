@@ -82,26 +82,26 @@ describe('resolveAppName()', () => {
 
   it('throws when apps/ does not exist', () => {
     const dir = makeTempDir();
-    expect(() => resolveAppName(dir, undefined)).toThrow(/No apps\/ directory found/);
+    expect(() => resolveAppName(dir)).toThrow(/No apps\/ directory found/);
   });
 
   it('throws when apps/ is empty', () => {
     const dir = makeTempDir();
     mkdirSync(join(dir, 'apps'));
-    expect(() => resolveAppName(dir, undefined)).toThrow(/No app found under/);
+    expect(() => resolveAppName(dir)).toThrow(/No app found under/);
   });
 
   it('throws when multiple apps exist, naming them in the error', () => {
     const dir = makeTempDir();
     mkdirSync(join(dir, 'apps', 'app-one'), { recursive: true });
     mkdirSync(join(dir, 'apps', 'app-two'), { recursive: true });
-    expect(() => resolveAppName(dir, undefined)).toThrow(/Multiple apps found.*app-one.*app-two/s);
+    expect(() => resolveAppName(dir)).toThrow(/Multiple apps found.*app-one.*app-two/s);
   });
 
   it('auto-discovers the single app under apps/, ignoring -e2e directories', () => {
     const dir = makeTempDir();
     mkdirSync(join(dir, 'apps', 'my-app'), { recursive: true });
     mkdirSync(join(dir, 'apps', 'my-app-e2e'), { recursive: true });
-    expect(resolveAppName(dir, undefined)).toBe('my-app');
+    expect(resolveAppName(dir)).toBe('my-app');
   });
 });

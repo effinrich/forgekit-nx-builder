@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import { run } from '../lib/run-command.js';
-import { readJson, writeJson, type PackageJsonLike } from '../lib/json-file.js';
+import { readJson, writeJson } from '../lib/json-file.js';
+import type { PackageJsonLike } from '../lib/json-file.js';
 import { validateExistingWorkspace } from '../lib/validate-target.js';
 import { ensureEslintDeps } from '../lib/ensure-eslint-deps.js';
 

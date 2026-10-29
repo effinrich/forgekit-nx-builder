@@ -1,6 +1,43 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "singleQuote": true,
-  "printWidth": 120,
-  "ignorePatterns": ["dist/**", ".supergoal/**"]
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": false,
+  "singleQuote": false,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "react-libs",
+        "elementNamePattern": ["react", "react-**"]
+      }
+    ],
+    "groups": [
+      "react-libs",
+      ["value-builtin", "value-external"],
+      "value-internal",
+      ["value-parent", "value-sibling", "value-index"],
+      "unknown"
+    ]
+  },
+  "ignorePatterns": [
+    ".output",
+    ".vinxi",
+    ".tanstack/**",
+    ".nitro",
+    ".wrangler/",
+    "storybook-static/**",
+    "bun.lock",
+    "src/routeTree.gen.ts",
+    "src/integrations/supabase/types.ts",
+    "dist/**",
+    "node_modules/**",
+    ".supergoal/**",
+    ".omc/**"
+  ]
 }
